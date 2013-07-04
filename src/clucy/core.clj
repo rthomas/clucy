@@ -8,7 +8,7 @@
            (org.apache.lucene.queryparser.classic QueryParser)
            (org.apache.lucene.search BooleanClause BooleanClause$Occur
                                      BooleanQuery IndexSearcher Query ScoreDoc
-                                     Scorer TermQuery)
+                                     Scorer Sort SortField SortField$Type TermQuery)
            (org.apache.lucene.search.highlight Highlighter QueryScorer
                                                SimpleHTMLFormatter)
            (org.apache.lucene.util Version AttributeSource)
@@ -172,8 +172,8 @@ fragments."
 (defn search
   "Search the supplied index with a query string."
   [index query max-results
-   & {:keys [highlight default-field default-operator page results-per-page]
-      :or {page 0 results-per-page max-results}}]
+   & {:keys [highlight default-field default-operator page results-per-page sort-by sort-type reverse]
+      :or {page 0 results-per-page max-results reverse false sort-type "STRING"}}]
   (if (every? false? [default-field *content*])
     (throw (Exception. "No default search field specified"))
     (with-open [reader (index-reader index)]
@@ -186,7 +186,10 @@ fragments."
                                             :and QueryParser/AND_OPERATOR
                                             :or  QueryParser/OR_OPERATOR)))
             query (.parse parser query)
-            hits (.search searcher query (int max-results))
+            hits (if (nil? sort-by)
+                   (.search searcher query (int max-results))
+                   (.search searcher query (int max-results)
+                     (Sort. (SortField. sort-by (SortField$Type/valueOf sort-type) reverse))))
             highlighter (make-highlighter query searcher highlight)
             start (* page results-per-page)
             end (min (+ start results-per-page) (.totalHits hits))]

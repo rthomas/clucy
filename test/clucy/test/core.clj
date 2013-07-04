@@ -39,6 +39,12 @@
       (is (== 0 (count (search index "name:miles AND age:100" 10))))
       (is (== 0 (count (search index "name:miles age:100" 10 :default-operator :and))))))
 
+  (testing "search sorting fn"
+    (let [index (memory-index)]
+      (doseq [person people] (add index person))
+      (is (= "Mary" (:name (first (search index "name:m*" 10 :sort-by "name")))))
+      (is (= "Miles" (:name (first (search index "name:m*" 10 :sort-by "name" :reverse true)))))))
+
   (testing "search-and-delete fn"
     (let [index (memory-index)]
       (doseq [person people] (add index person))
